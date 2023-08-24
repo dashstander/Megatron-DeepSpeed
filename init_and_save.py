@@ -353,6 +353,7 @@ def git_ds_info():
 
 if __name__ == "__main__":
     git_ds_info()
+    args = get_args()
     model, optimizer, opt_param_scheduler = setup_model_and_optimizer(
         model_provider,
         ModelType.encoder_or_decoder,
