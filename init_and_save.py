@@ -11,6 +11,8 @@ from megatron import get_timers
 from megatron import get_tokenizer
 from megatron.checkpointing import save_checkpoint
 from megatron.training import setup_model_and_optimizer
+from megatron.initialize import initialize_megatron
+
 from megatron.core import mpu, tensor_parallel
 from megatron.core.enums import ModelType
 from megatron.data.gpt_dataset import build_train_valid_test_datasets
@@ -353,7 +355,7 @@ def git_ds_info():
 
 if __name__ == "__main__":
     git_ds_info()
-    args = get_args()
+    initialize_megatron()
     model, optimizer, opt_param_scheduler = setup_model_and_optimizer(
         model_provider,
         ModelType.encoder_or_decoder,
