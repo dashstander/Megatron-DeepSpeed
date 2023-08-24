@@ -355,7 +355,7 @@ def git_ds_info():
 
 if __name__ == "__main__":
     git_ds_info()
-    initialize_megatron()
+    initialize_megatron(args_defaults={'tokenizer_type': 'GPT2BPETokenizer'})
     model, optimizer, opt_param_scheduler = setup_model_and_optimizer(
         model_provider,
         ModelType.encoder_or_decoder,
