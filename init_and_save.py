@@ -10,7 +10,7 @@ from megatron import print_rank_0
 from megatron import get_timers
 from megatron import get_tokenizer
 from megatron.checkpointing import save_checkpoint
-from megatron.training import setup_model_and_optimizer, tran_
+from megatron.training import setup_model_and_optimizer
 from megatron.core import mpu, tensor_parallel
 from megatron.core.enums import ModelType
 from megatron.data.gpt_dataset import build_train_valid_test_datasets
