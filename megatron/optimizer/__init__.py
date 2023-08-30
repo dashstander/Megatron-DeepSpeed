@@ -32,6 +32,7 @@ def get_param_groups(modules,
         for name, param in module.named_parameters():
             if not param.requires_grad:
                 continue
+            param.module_name = name
 
             if no_weight_decay_cond is not None:
                 no_wd = no_weight_decay_cond(name, param)
