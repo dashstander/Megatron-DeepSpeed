@@ -76,6 +76,15 @@ def get_megatron_optimizer(model,
                                     no_weight_decay_cond,
                                     scale_lr_cond,
                                     lr_mult)
+    param_info = {}
+    for pg in param_groups:
+        pg_info = []
+        for param in pg['params']:
+            pinfo = {'shape': param.shape}
+            pinfo.update(param.__dict__)
+            pg_info.append(pinfo)
+        param_info[pg['name']] = pg_info        
+
     if args.create_moe_param_group:
         from deepspeed.moe.utils import split_params_into_different_moe_groups_for_optimizer
         param_groups = split_params_into_different_moe_groups_for_optimizer(param_groups)
