@@ -415,8 +415,9 @@ if __name__ == "__main__":
     )
     print('#######################\nSaving####################')
     bit16_groups = log_bit16_groups(model[0].optimizer, model[0].param_names, int(args.zero_stage))
-    with open(f'zero{args.zero_stage}.json', mode='w') as jfile:
+    zps = model[0]._get_zero_param_shapes()
+    with open(f'param_shapes_zero{args.zero_stage}.json', mode='w') as jfile:
         if torch.distributed.get_rank() == 0:
-            json.dump(bit16_groups, jfile)
+            json.dump(zps, jfile)
     #save_checkpoint(0, model, optimizer, opt_param_scheduler)
     
