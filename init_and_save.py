@@ -353,7 +353,56 @@ def git_ds_info():
     print(f'**** Git info for Megatron: git_hash={git_hash} git_branch={git_branch} ****')
 
 
+from collections import OrderedDict
+import json
+
+
+def log_bit16_groups(optimizer, param_names, zero_stage):
+
+    """Returns a dict of name to shape mapping, only for the flattened fp32 weights saved by the
+    optimizer. the names are exactly as in state_dict. The order is absolutely important, since
+    the saved data is just flattened data with no identifiers and requires reconstruction in the
+    same order it was saved.
+    We can't rely on self.module.named_parameters() to get the saved tensors, as some params
+    will be missing and others unsaved and then it'd be impossible to reconstruct state_dict
+    from the flattened weights.
+    optimizer.bit16_groups seems to be the easiest to use as it's in all zeroX versions.
+    """
+    param_group_shapes = []
+    cnt = 0
+    numel = 0
+
+    # zero2 started using a round_robin_bit16_groups which is a shuffled version of bit16_groups -
+    # if we don't use it, we get parameters ordered incorrectly
+    if hasattr(optimizer, "round_robin_bit16_groups"):
+        bit16_groups = optimizer.round_robin_bit16_groups
+    else:
+        bit16_groups = (
+            optimizer.bit16_groups if zero_stage == 2 else optimizer.fp16_groups
+        )
+
+    for bit16_group in bit16_groups:
+        param_shapes = OrderedDict()
+        for param in bit16_group:
+            cnt += 1
+            numel += param.ds_numel if hasattr(param, "ds_numel") else param.numel()
+            shape = param.ds_shape if hasattr(param, "ds_shape") else param.shape
+            if param not in param_names:
+                raise ValueError(f"failed to find optimizer param in named params")
+            name = param_names[param]
+            param_shapes[name] = shape
+
+            # uncomment to debug zero_to_fp32.py problems
+            # if self.global_rank == 0: print(f"saving param {name} {shape} (numel={shape.numel()})")
+        param_group_shapes.append(param_shapes)
+    # if self.global_rank == 0: print(f"Total saved {numel} numels in {cnt} params")
+
+    return param_group_shapes
+
+
+
 if __name__ == "__main__":
+    args = get_args()
     git_ds_info()
     initialize_megatron(args_defaults={'tokenizer_type': 'GPT2BPETokenizer'})
     model, optimizer, opt_param_scheduler = setup_model_and_optimizer(
@@ -363,6 +412,16 @@ if __name__ == "__main__":
         data_post_process=data_post_process,
         build_train_valid_test_datasets_provider=train_valid_test_datasets_provider
     )
+    model, optimizer, _, opt_param_scheduler = deepspeed.initialize(
+                model=model[0],
+                optimizer=optimizer,
+                args=args,
+                lr_scheduler=opt_param_scheduler,
+                mpu=mpu if args.no_pipeline_parallel else None
+            )
     print('#######################\nSaving####################')
-    save_checkpoint(0, model, optimizer, opt_param_scheduler)
+    bit16_groups = log_bit16_groups(optimizer, model.param_names, int(args.zero_stage))
+    with open('zero{args.zero_stage}.json', mode='w') as jfile:
+        json.dump(bit16_groups, jfile)
+    #save_checkpoint(0, model, optimizer, opt_param_scheduler)
     
