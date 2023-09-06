@@ -413,13 +413,6 @@ if __name__ == "__main__":
         data_post_process=data_post_process,
         build_train_valid_test_datasets_provider=train_valid_test_datasets_provider
     )
-    model, optimizer, _, opt_param_scheduler = deepspeed.initialize(
-                model=model[0],
-                optimizer=optimizer,
-                args=args,
-                lr_scheduler=opt_param_scheduler,
-                mpu=mpu if args.no_pipeline_parallel else None
-            )
     print('#######################\nSaving####################')
     bit16_groups = log_bit16_groups(optimizer, model.param_names, int(args.zero_stage))
     with open('zero{args.zero_stage}.json', mode='w') as jfile:
