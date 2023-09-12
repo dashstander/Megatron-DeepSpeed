@@ -9,6 +9,8 @@ import numpy as np
 from deepspeed.accelerator import get_accelerator
 import torch
 
+import json
+
 from megatron import update_num_microbatches
 from megatron.core import mpu, tensor_parallel
 from .global_vars import get_args
@@ -238,6 +240,12 @@ def save_checkpoint(iteration, model, optimizer, opt_param_scheduler):
         ensure_directory_exists(optim_checkpoint_name)
         optimizer.save_parameter_state(optim_checkpoint_name)
 
+    param_shapes = model[0]._get_zero_param_shapes()
+
+    with open('param_shapes_megatron245.json', mode='w') as jfile:
+        json.dump(param_shapes, jfile)
+
+
     # Collect args, model, RNG.
     if not torch.distributed.is_initialized() \
        or mpu.get_data_parallel_rank() == 0 or args.deepspeed:
@@ -285,6 +293,10 @@ def save_checkpoint(iteration, model, optimizer, opt_param_scheduler):
                 return model[0].module.state_dict_for_save_checkpoint(prefix=prefix, keep_vars=keep_vars)
             model[0].module.state_dict = state_dict_for_save_checkpoint_deepspeed
 
+        param_shapes = model[0]._get_zero_param_shapes()
+        with open('param_shapes_megatron298.json', mode='w') as jfile:
+            json.dump(param_shapes, jfile)
+
         # Saving is a collective communication
         checkpoint_name = get_checkpoint_name(args.save, iteration)
 
@@ -292,6 +304,10 @@ def save_checkpoint(iteration, model, optimizer, opt_param_scheduler):
         for _ in range(3):
             checkpoint_name = os.path.dirname(checkpoint_name)
         model[0].save_checkpoint(checkpoint_name, client_state=state_dict)
+
+        param_shapes = model[0]._get_zero_param_shapes()
+        with open('param_shapes_megatron309.json', mode='w') as jfile:
+            json.dump(param_shapes, jfile)
 
         if args.no_pipeline_parallel:
             model[0].module.state_dict = original_state_dict
