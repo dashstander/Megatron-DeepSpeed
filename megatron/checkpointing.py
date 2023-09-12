@@ -304,7 +304,7 @@ def save_checkpoint(iteration, model, optimizer, opt_param_scheduler):
         for _ in range(3):
             checkpoint_name = os.path.dirname(checkpoint_name)
         model[0].save_checkpoint(checkpoint_name, client_state=state_dict)
-
+        print('Saving param shapes!!')
         param_shapes = model[0]._get_zero_param_shapes()
         with open('param_shapes_megatron309.json', mode='w') as jfile:
             json.dump(param_shapes, jfile)
